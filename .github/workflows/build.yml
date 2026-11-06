@@ -1,0 +1,41 @@
+name: Build APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Unpack project zip
+        run: |
+          ls -la
+          unzip -o ./*.zip -d project
+          ls -la project project/app
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+
+      - name: Build debug APK
+        working-directory: project
+        run: gradle assembleDebug --stacktrace
+
+      - name: Unit tests (non-blocking)
+        working-directory: project
+        continue-on-error: true
+        run: gradle testDebugUnitTest
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MakSofts-AutoReply-APK
+          path: project/app/build/outputs/apk/debug/*.apk
